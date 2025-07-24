@@ -8,59 +8,55 @@ import Loader from '../Loader/Loader'
 import ErrorMessage from '../ErrorMessage/ErrorMessage'
 import MovieModal from '../MovieModal/MovieModal'
 import type { Movie } from '../../types/movie';
+import { useQuery } from '@tanstack/react-query';
 
 export default function App() {
 
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isMovieModal, setisMovieModal] = useState(false);
-  const closeModal = () => {
-    setisMovieModal(false);
-    setSelectedMovie(null);
-  };  
-  const [isErrorMessage, setisErrorMessage] = useState(false); 
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [query, setQuery] = useState('');  
   
+  const [isMovieModal, setIsMovieModal] = useState(false);
+  const closeModal = () => {
+    setIsMovieModal(false);
+    setSelectedMovie(null);
+  };   
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+
+  const { data: movies = [], error, isLoading, isError, isSuccess } = useQuery({
+    queryKey: ['movies', query], 
+    queryFn: () => fetchMovies(query), 
+    enabled: query !== "",
+  });  
     
-    const handleSearch = async (query: string) => {
-    setisErrorMessage(false);  
-    setIsLoading(true);  
-    setMovies([]);
-    try {  
-        const results = await fetchMovies(query);
-        
-        if (results.length === 0) {
-            toast('No movies found for your request.');
-            return;
-        } else {
-            setMovies(results);
-        }
-        } catch (e) {
-            setisErrorMessage(true);
-        } finally {
-            setIsLoading(false);
-    }
-    };
+  const handleSearch = (searchQuery: string) => {
+    setSelectedMovie(null);
+    setIsMovieModal(false);
+    setQuery(searchQuery);
+  };  
 
   const handleSelectMovie = (movie: Movie) => {
       setSelectedMovie(movie);
-      setisMovieModal(true);
-  } 
+      setIsMovieModal(true);
+    }
+  
+  if (isSuccess && movies.length === 0) {
+    toast('No movies found for your request.');
+  }  
     
   return (
-      <div className={css.app}>
-          <SearchBar onSubmit={handleSearch} />
-          {isErrorMessage ? (
-             <ErrorMessage />
-          ) : isLoading ? (
-             <Loader />
-          ) : (
-             <MovieGrid movies={movies} onSelect={handleSelectMovie} />
-          )}
-          {isMovieModal && selectedMovie && (
-             <MovieModal movie={selectedMovie} onClose={closeModal} />
-          )}
-          <Toaster/>
-      </div>
+    <div className={css.app}>
+      <SearchBar onSubmit={handleSearch} />
+
+      {isLoading && <Loader />}
+      {isError && <ErrorMessage />}
+      {isSuccess && movies.length > 0 && (
+        <MovieGrid movies={movies} onSelect={handleSelectMovie} />
+      )}
+
+      {isMovieModal && selectedMovie && (
+        <MovieModal movie={selectedMovie} onClose={closeModal} />
+      )}
+
+      <Toaster />
+    </div>
   );
 }

@@ -6,12 +6,13 @@ const TOKEN = import.meta.env.VITE_TMDB_TOKEN;
 
 interface TMDBResponse {
   results: Movie[];
-  page:
+  page: number;
+  total_pages: number;
 }
 
-export default async function fetchMovies(query: string): Promise<Movie[]> {
+export default async function fetchMovies(query: string, page = 1): Promise<Movie[]> {
   const config = {
-    params: { query },
+    params: { query, page },
     headers: {
       Authorization: `Bearer ${TOKEN}`,
     },
